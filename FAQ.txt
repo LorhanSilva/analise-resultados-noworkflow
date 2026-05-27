@@ -1,0 +1,1 @@
+Precisamos definir o que precisamos coletar primeiro. Comandos para conseguir as informações básicas necessárias para nossas implementações posteriores.
