@@ -46,7 +46,7 @@ warnings.filterwarnings("ignore")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Titanic — pipeline noWorkflow")
-    parser.add_argument("--data_path",     default="titanic.csv",  type=str)
+    parser.add_argument("--data_path",     default="Titanic-Dataset.csv",  type=str)
     parser.add_argument("--test_size",     default=0.2,            type=float)
     parser.add_argument("--random_state",  default=42,             type=int)
     # --- imputação ---
@@ -479,9 +479,9 @@ def main():
     # shap_importance = compute_shap_importance(model, X_train, feature_names)
 
     # 10. Salvar resultados
-    save_results(metrics, cv_results, None,
-                 feature_names, model, args.output_dir)
-
+    # save_results(metrics, cv_results, None,
+    #              feature_names, model, args.output_dir)
+    print(f"Resultados : {metrics} |\n| CV: {cv_results} |\n| features: {feature_names}|\n| model: {model}\n| output_dir: {args.output_dir}")
     print("=" * 60)
     print("CONCLUÍDO")
     print("=" * 60)
