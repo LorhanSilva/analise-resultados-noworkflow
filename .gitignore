@@ -223,3 +223,5 @@ __marimo__/
 .streamlit/secrets.toml
 
 .noworkflow
+/noworkflow-master
+/.vscode
