@@ -22,7 +22,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
-# import shap
+#import shap
 import matplotlib
 matplotlib.use("Agg")           # sem display — compatível com now run
 import matplotlib.pyplot as plt
@@ -354,39 +354,39 @@ def evaluate_model(model, X_test, y_test):
 #     rastreável e comparável entre trials.
 # ──────────────────────────────────────────────────────────────────────────────
 
-def compute_shap_importance(model, X_train, feature_names):
-    """
-    Calcula importância de features via SHAP TreeExplainer.
-    Retorna dicionário {feature: mean_abs_shap} ordenado por importância.
+#def compute_shap_importance(model, X_train, feature_names):
+#    """
+#    Calcula importância de features via SHAP TreeExplainer.
+#    Retorna dicionário {feature: mean_abs_shap} ordenado por importância.
 
-    AVISO: o interior do SHAP não é rastreado pelo noWorkflow (execução em C++).
-    O valor de retorno desta função, no entanto, é capturado normalmente.
-    """
-    explainer   = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X_train)
+#    AVISO: o interior do SHAP não é rastreado pelo noWorkflow (execução em C++).
+#    O valor de retorno desta função, no entanto, é capturado normalmente.
+#    """
+#    explainer   = shap.TreeExplainer(model)
+#    shap_values = explainer.shap_values(X_train)
 
     # Para classificação binária, shap_values pode ser lista [classe0, classe1]
     # ou array 3D (n_samples, n_features, n_classes)
-    if isinstance(shap_values, list):
-        shap_matrix = np.array(shap_values[1])
-    elif shap_values.ndim == 3:
-        shap_matrix = shap_values[:, :, 1]
-    else:
-        shap_matrix = shap_values
+#    if isinstance(shap_values, list):
+#        shap_matrix = np.array(shap_values[1])
+#    elif shap_values.ndim == 3:
+#        shap_matrix = shap_values[:, :, 1]
+#    else:
+#        shap_matrix = shap_values
 
-    mean_abs = np.abs(shap_matrix).mean(axis=0)
-    importance = {
-        feature_names[i]: round(float(mean_abs[i]), 6)
-        for i in range(len(feature_names))
-    }
-    importance = dict(sorted(importance.items(),
-                              key=lambda x: x[1], reverse=True))
+#    mean_abs = np.abs(shap_matrix).mean(axis=0)
+#    importance = {
+#        feature_names[i]: round(float(mean_abs[i]), 6)
+#        for i in range(len(feature_names))
+#    }
+#    importance = dict(sorted(importance.items(),
+#                              key=lambda x: x[1], reverse=True))
 
-    top5 = list(importance.items())[:5]
-    print(f"[shap]  top-5 features: "
-          + " | ".join(f"{k}={v:.4f}" for k, v in top5))
+ #   top5 = list(importance.items())[:5]
+ #   print(f"[shap]  top-5 features: "
+ #         + " | ".join(f"{k}={v:.4f}" for k, v in top5))
 
-    return importance
+#    return importance
 
 
 # ──────────────────────────────────────────────────────────────────────────────
