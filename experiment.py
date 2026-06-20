@@ -22,7 +22,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import shap
+# import shap
 import matplotlib
 matplotlib.use("Agg")           # sem display — compatível com now run
 import matplotlib.pyplot as plt
@@ -403,7 +403,10 @@ def save_results(metrics, cv_results, shap_importance,
 
     # Métricas em CSV
     metrics_path = os.path.join(output_dir, "metrics.csv")
-    all_metrics = {**metrics, **cv_results}
+
+    all_metrics = metrics.copy()
+    all_metrics.update(cv_results)
+
     pd.DataFrame([all_metrics]).to_csv(metrics_path, index=False)
 
     # Gráfico de importância SHAP
