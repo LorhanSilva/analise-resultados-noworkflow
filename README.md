@@ -12,3 +12,15 @@ Quais funções não foram chamadas na última execução?
 "Qual foi o valor de retorno da função Y?"
 "Este trial é reproduzível em relação ao anterior?"
 
+## Prolog (necessário para as consultas em Prolog)
+
+No Windows, instale o interpretador e a ponte Python:
+
+```powershell
+winget install --id SWI-Prolog.SWI-Prolog -e   # SWI-Prolog (interpretador)
+pip install pyswip                              # ponte Python -> SWI-Prolog
+```
+
+As consultas que usam só SQL funcionam sem isso; o Prolog é exigido apenas
+pelas análises recursivas (ex.: "por que o resultado mudou?").
+
