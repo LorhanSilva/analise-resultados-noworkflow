@@ -571,6 +571,8 @@ def resumo_geral():
 #   Pergunta 6 (dada a funcao X, quais funcoes a chamaram)     -> pergunta_6_...        [A IMPLEMENTAR]
 #   Pergunta 7 (valor de retorno da funcao Y)                  -> pergunta_7_...        [A IMPLEMENTAR]
 #   Pergunta 8 (trial e reproduzivel em relacao ao anterior)   -> pergunta_8_...        [A IMPLEMENTAR]
+#   Pergunta 9 (Qual variável teve o valor mais impactado entre dois trials) -> pergunta_9_...        [A IMPLEMENTAR]
+#   Pergunta 10 (Quais valores uma certa variável teve ao longo da execução) -> pergunta_10_...        [A IMPLEMENTAR]
 # ----------------------------------------------------------------------------
 
 
@@ -606,6 +608,7 @@ def pergunta_6_quem_chamou(numero, nome_funcao):
     """
     # TODO: implementar
     print("pergunta_6 ainda nao implementada")
+
 
 
 def pergunta_7_valor_de_retorno(numero, nome_funcao):
@@ -661,6 +664,22 @@ def pergunta_3_primeira_divergencia(numero_a, numero_b):
     """
     # TODO: implementar
     print("pergunta_3 ainda nao implementada")
+    
+def pergunta_9_maior_divergencia(numero_a, numero_b):
+    """
+    [A IMPLEMENTAR] "Qual foi a variavel que divergiu mais entre dois trials?"
+
+    """
+    # TODO: implementar
+    print("pergunta_9 ainda nao implementada")
+    
+def pergunta_10_historico(numero):
+    """
+    [A IMPLEMENTAR] "Qual foram os valores que uma a variavel w conteu durante uma execução?"
+
+    """
+    # TODO: implementar
+    print("pergunta_10 ainda nao implementada")
 
 
 # ----------------------------------------------------------------------------
@@ -673,18 +692,20 @@ def _perguntar_numero(texto):
 
 
 def menu_perguntas():
-    """Submenu com as 8 perguntas do enunciado (chama as funcoes pergunta_*)."""
+    """Submenu com as 10 perguntas do enunciado (chama as funcoes pergunta_*)."""
     while True:
         print("")
         print("------------------- PERGUNTAS DO ENUNCIADO -------------------")
         print("  1 - [P1] Funcao mais demorada entre TODAS as execucoes  [A IMPLEMENTAR]")
         print("  2 - [P2] Funcoes nao chamadas na ULTIMA execucao        [PRONTA]")
-        print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [A IMPLEMENTAR]")
+        print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [A IMPLEMENTAR]")#Minha
         print("  4 - [P4] Funcao que rodou por mais tempo (1 execucao)   [PRONTA]")
         print("  5 - [P5] Funcoes nao chamadas nesta execucao            [PRONTA]")
         print("  6 - [P6] Dada a funcao X, quais funcoes a chamaram      [A IMPLEMENTAR]")
         print("  7 - [P7] Valor de retorno da funcao Y                   [A IMPLEMENTAR]")
         print("  8 - [P8] Trial reproduzivel em relacao ao anterior      [A IMPLEMENTAR]")
+        print("  9 - [P9] Variável mais impactada (2 trials)      [A IMPLEMENTAR]")#Minha
+        print("  10 - [P10] Valores da variável W (1 execucao)     [A IMPLEMENTAR]")#Minha
         print("  v - Voltar")
         opcao = input("Escolha: ").strip().lower()
 
@@ -725,6 +746,14 @@ def menu_perguntas():
             a = _perguntar_numero("Trial anterior: ")
             b = _perguntar_numero("Trial atual: ")
             pergunta_8_reproduzivel(a, b)
+        elif opcao == "9":
+            mostrar_trials()
+            a = _perguntar_numero("Primeiro trial: ")
+            b = _perguntar_numero("Segundo trial: ")
+            pergunta_9_maior_divergencia(a, b)#
+        elif opcao == "10":
+            mostrar_trials()
+            mostrar_duracoes(_perguntar_numero("Numero do trial: "))
         else:
             print("Opcao invalida.")
 
