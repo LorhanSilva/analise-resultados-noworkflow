@@ -98,6 +98,19 @@ def id_do_trial(numero):
     raise ValueError("Nao existe trial numero " + str(numero))
 
 
+def ultima_execucao():
+    """
+    Numero do ultimo trial FINALIZADO (a 'ultima execucao').
+    Ignora trials 'unfinished' (execucao interrompida), cuja proveniencia e
+    incompleta e nao serve para dizer o que foi ou nao chamado.
+    Devolve None se nao houver nenhuma execucao finalizada.
+    """
+    finalizados = [t["n"] for t in listar_trials() if t["status"] == "finished"]
+    if finalizados:
+        return finalizados[-1]
+    return None
+
+
 # ----------------------------------------------------------------------------
 # CAMADA PROLOG  -  consulta recursiva sobre o grafo de dependencias
 # ----------------------------------------------------------------------------
@@ -432,20 +445,6 @@ def explicar_mudanca(numero_a, numero_b):
     return causas, resultados
 
 
-def linhas_da_dependencia(numero, nome_variavel):
-    """[PROLOG] Linhas de codigo que influenciaram um valor (seu grafo)."""
-    nome_por_id, ids_por_nome, linha_por_id = _mapa_evaluations(numero)
-    ids = ids_por_nome.get(nome_variavel, [])
-    alcancados = dependencias_de(numero, ids)
-    linhas = set()
-    for i in alcancados:
-        numero_linha = linha_por_id.get(i)
-        # ignora nos sem linha real (codigo interno usa -1)
-        if numero_linha is not None and numero_linha > 0:
-            linhas.add(numero_linha)
-    return sorted(linhas)
-
-
 # ----------------------------------------------------------------------------
 # APRESENTACAO  (impressao amigavel no terminal)
 # ----------------------------------------------------------------------------
@@ -475,10 +474,10 @@ def mostrar_duracoes(numero, limite=15):
 
 
 def mostrar_funcoes_nao_chamadas(numero):
-    _titulo("FUNCOES DEFINIDAS MAS NAO CHAMADAS - trial %d  [SQL]" % numero)
+    _titulo("FUNÇÕES DEFINIDAS MAS NÃO CHAMADAS - trial %d  [SQL]" % numero)
     linhas = funcoes_nao_chamadas(numero)
     if not linhas:
-        print("  (todas as funcoes definidas foram chamadas)")
+        print("  (todas as funções definidas foram chamadas)")
     for linha in linhas:
         print("  -", linha["funcao"])
 
@@ -506,7 +505,7 @@ def mostrar_por_que_mudou(numero_a, numero_b):
         print("  (nenhum valor escalar mudou; nada a explicar)")
         return
 
-    print("  ENTRADAS QUE VOCE MUDOU (causas):")
+    print("  ENTRADAS QUE VOCÊ MUDOU (causas):")
     if not causas:
         print("    (nenhuma)")
     for nome, va, vb, variacao in causas[:10]:
@@ -520,16 +519,6 @@ def mostrar_por_que_mudou(numero_a, numero_b):
     for nome, va, vb, variacao, causas_dele in resultados[:10]:
         print("    %-40s %g -> %g  (%.1f%%)" % (nome[:40], va, vb, variacao))
         print("        por causa de: " + ", ".join(sorted(causas_dele)[:4]))
-
-    # o resultado mais impactado (resultados ja vem ordenado por variacao)
-    alvo = resultados[0][0]
-    print("")
-    print("  GRAFO DE DEPENDENCIA do resultado mais afetado (via Prolog):")
-    print("    '%s'" % alvo)
-    linhas = linhas_da_dependencia(numero_b, alvo)
-    if linhas:
-        print("    linhas de codigo envolvidas: "
-              + ", ".join(str(n) for n in linhas))
 
 
 def resumo_geral():
@@ -574,21 +563,89 @@ def resumo_geral():
 # ----------------------------------------------------------------------------
 
 
-def pergunta_1_funcao_mais_demorada_geral():
+def pergunta_1_funcao_mais_demorada_geral(numeros=None):
     """
-    [A IMPLEMENTAR] "Dentre TODAS as execucoes, qual funcao rodou por mais tempo?"
+    [Dono: Caio] PERGUNTA 1: "Dentre Z execucoes, qual funcao rodou por mais tempo?"
 
-    Diferenca para a pergunta 4: aqui olhamos TODOS os trials juntos, nao um so.
+    numeros: lista de numeros de trial a considerar.
+             None ou lista vazia = TODAS as execucoes finalizadas.
+             Ex.: pergunta_1_funcao_mais_demorada_geral([2, 3, 4]).
 
-    Como fazer (sugestao, via SQL):
-      - Parecido com duracoes_por_funcao, mas SEM filtrar por um unico trial:
-        junte activation + evaluation + code_component de todos os trials e
-        agrupe por nome de funcao.
-      - A duracao de cada chamada e (e.checkpoint - a.start_checkpoint).
-      - Mostre a funcao campea e em qual trial ela ocorreu.
+    Usa o TEMPO PROPRIO de cada funcao: o tempo gasto NELA MESMA, descontando
+    o tempo das funcoes que ela chamou. Assim o ranking aponta o gargalo real
+    e nao wrappers como o proprio script ou o main(), que "duram" muito so
+    porque chamam todo o resto.
+
+    Tempo total de uma chamada  = fim - inicio
+        (fim = evaluation.checkpoint; inicio = activation.start_checkpoint)
+    Tempo proprio de uma chamada = total - soma do total das filhas diretas
+        (a filha de uma ativacao e quem tem activation_id apontando para ela)
+
+    O resultado e por (execucao, funcao). [SQL + calculo em Python]
     """
-    # TODO: implementar
-    print("pergunta_1 ainda nao implementada")
+    # 1) decide quais trials entram na conta
+    if numeros:
+        trials = [t for t in listar_trials() if t["n"] in numeros]
+    else:
+        trials = [t for t in listar_trials() if t["status"] == "finished"]
+    if not trials:
+        print("Nenhuma execução para analisar.")
+        return
+
+    # 2) para cada execucao, calcula o tempo proprio de cada funcao
+    proprio_por_funcao = {}   # (numero_trial, nome) -> tempo proprio somado
+    chamadas = {}             # (numero_trial, nome) -> quantas vezes rodou
+    for t in trials:
+        linhas = consultar_sql("""
+            SELECT a.id AS id, a.start_checkpoint AS inicio,
+                   e.checkpoint AS fim, e.activation_id AS pai,
+                   cc.name AS nome, cc.type AS tipo
+            FROM activation a
+            JOIN evaluation e      ON e.trial_id = a.trial_id AND e.id = a.id
+            JOIN code_component cc ON cc.trial_id = a.trial_id
+                                  AND cc.id = e.code_component_id
+            WHERE a.trial_id = ?
+        """, (t["id"],))
+
+        total = {}        # id -> tempo total (inclusivo)
+        nome = {}         # id -> nome da funcao
+        tipo = {}         # id -> tipo do code_component ('script', 'call', ...)
+        soma_filhas = {}  # id -> soma do total das filhas diretas
+        for linha in linhas:
+            total[linha["id"]] = linha["fim"] - linha["inicio"]
+            nome[linha["id"]] = linha["nome"]
+            tipo[linha["id"]] = linha["tipo"]
+        for linha in linhas:
+            pai = linha["pai"]
+            if pai in total:
+                soma_filhas[pai] = soma_filhas.get(pai, 0.0) + total[linha["id"]]
+
+        for ident in total:
+            # ignora a ativacao raiz (o proprio script, tipo 'script'): o tempo
+            # proprio dela e so import/startup, nao uma funcao do usuario
+            if tipo[ident] == "script":
+                continue
+            proprio = total[ident] - soma_filhas.get(ident, 0.0)
+            chave = (t["n"], nome[ident])
+            proprio_por_funcao[chave] = proprio_por_funcao.get(chave, 0.0) + proprio
+            chamadas[chave] = chamadas.get(chave, 0) + 1
+
+    # 3) ordena por tempo proprio e mostra (campea + ranking)
+    ranking = sorted(proprio_por_funcao.items(),
+                     key=lambda item: item[1], reverse=True)
+    if not ranking:
+        print("Sem funções para mostrar nessas execuções.")
+        return
+    print("Execuções consideradas: " + ", ".join(str(t["n"]) for t in trials))
+    print("Tempo próprio = tempo gasto na função, descontando as funções que ela chamou.")
+    (trial_n, nome_f), tempo = ranking[0]
+    print("Função que rodou por mais tempo: %s  (trial %d, %.4fs próprios)"
+          % (" ".join(nome_f.split())[:55], trial_n, tempo))
+    print("Ranking por tempo próprio — função @ execução (Nx = nº de chamadas):")
+    for (trial_n, nome_f), tempo in ranking[:10]:
+        curto = " ".join(nome_f.split())[:45]
+        print("  %8.4fs  trial %d  %4dx  %s"
+              % (tempo, trial_n, chamadas[(trial_n, nome_f)], curto))
 
 
 def pergunta_6_quem_chamou(numero, nome_funcao):
@@ -678,7 +735,7 @@ def menu_perguntas():
         print("")
         print("------------------- PERGUNTAS DO ENUNCIADO -------------------")
         print("  1 - [P1] Funcao mais demorada entre TODAS as execucoes  [A IMPLEMENTAR]")
-        print("  2 - [P2] Funcoes nao chamadas na ULTIMA execucao        [PRONTA]")
+        print("  2 - [P2] Funcoes nao chamadas (vazio = ultima execucao) [PRONTA]")
         print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [A IMPLEMENTAR]")
         print("  4 - [P4] Funcao que rodou por mais tempo (1 execucao)   [PRONTA]")
         print("  5 - [P5] Funcoes nao chamadas nesta execucao            [PRONTA]")
@@ -691,14 +748,24 @@ def menu_perguntas():
         if opcao == "v":
             break
         elif opcao == "1":
-            pergunta_1_funcao_mais_demorada_geral()
-        elif opcao == "2":
-            finalizados = [t["n"] for t in listar_trials() if t["status"] == "finished"]
-            if finalizados:
-                print("Ultima execucao: trial %d" % finalizados[-1])
-                mostrar_funcoes_nao_chamadas(finalizados[-1])
+            entrada = input("Trials (vazio/0 = todas, ou ex.: 2,3,4): ").strip()
+            if entrada == "" or entrada == "0":
+                numeros = None
             else:
-                print("Nao ha execucao finalizada.")
+                numeros = [int(x) for x in entrada.replace(",", " ").split()]
+            pergunta_1_funcao_mais_demorada_geral(numeros)
+        elif opcao == "2":
+            mostrar_trials()
+            entrada = input("Trial (vazio = última execução): ").strip()
+            if entrada == "":
+                numero = ultima_execucao()
+                if numero is None:
+                    print("Não há execução finalizada.")
+                    continue
+                print("Última execução: trial %d" % numero)
+            else:
+                numero = int(entrada)
+            mostrar_funcoes_nao_chamadas(numero)
         elif opcao == "3":
             mostrar_trials()
             a = _perguntar_numero("Primeiro trial: ")
