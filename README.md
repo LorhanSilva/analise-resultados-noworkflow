@@ -27,3 +27,12 @@ pelas análises recursivas (ex.: "por que o resultado mudou?").
 
 I have used DeepSeek to help us code. Despite that, I have revised all suggestions and made appropriate corrections. I thus take full responsibility for the contents of this work/report.
 
+<<<<<<< HEAD
+I have used DeepSeek to help us code. Despite that, I have revised all suggestions and made appropriate corrections. I thus take full responsibility for the contents of this work/report.
+
+=======
+#### branch Lorhan
+- Fiz as implementação das perguntas 6,7 e 9;
+- Em relação a pergunta 9 recomendo retiramos ela. Basicamente o NoWorkflow salva os retornos de objetos como endereços de memória.
+Então essa pergunta meio que perde sentido, já que 90% das funções retornam objetos.
+>>>>>>> origin/Lorhan

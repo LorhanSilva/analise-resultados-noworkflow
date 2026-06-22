@@ -652,35 +652,89 @@ def pergunta_1_funcao_mais_demorada_geral(numeros=None):
 
 def pergunta_6_quem_chamou(numero, nome_funcao):
     """
-    [A IMPLEMENTAR] "Dada uma funcao X, quais funcoes a chamaram?"
+    >>> Responde a PERGUNTA 6: "Dada uma funcao X, quais funcoes a chamaram?"
 
-    Como fazer (sugestao, via SQL):
-      - Cada chamada de funcao e uma 'activation'. A funcao X tem uma definicao
-        em code_component (type='function_def'); as chamadas a X sao activations
-        com code_block_id igual ao id dessa definicao.
-      - Para cada chamada, a 'evaluation' de mesmo id tem activation_id, que
-        aponta para a ativacao que CHAMOU (a "mae").
-      - Traduza esse activation_id de volta para o nome da funcao chamadora
-        (tabela activation, coluna name).
+     [SQL] Para cada chamada de X, sobe um nivel no grafo de ativacoes:
+      1. Acha o id da definicao de X em code_component (type='function_def').
+      2. Cada activation com code_block_id = esse id e uma chamada de X.
+      3. A evaluation de mesmo id tem activation_id -> a ativacao "mae" (chamadora).
+      4. Busca o nome da mae em activation; se nula, o chamador foi o nivel de
+         modulo (codigo de topo).
     """
-    # TODO: implementar
-    print("pergunta_6 ainda nao implementada")
+    query = """
+        SELECT DISTINCT
+            COALESCE(mae.name, '<modulo>') AS chamadora,
+            COUNT(*) AS vezes
+        FROM activation filha
+        JOIN code_component cc
+             ON cc.trial_id = filha.trial_id
+            AND cc.id       = filha.code_block_id
+            AND cc.type     = 'function_def'
+            AND cc.name     = ?
+        JOIN evaluation e
+             ON e.trial_id = filha.trial_id
+            AND e.id       = filha.id
+        LEFT JOIN activation mae
+             ON mae.trial_id = filha.trial_id
+            AND mae.id       = e.activation_id
+        WHERE filha.trial_id = ?
+        GROUP BY chamadora
+        ORDER BY vezes DESC
+    """
+    return consultar_sql(query, (nome_funcao, id_do_trial(numero)))
+
+
+def mostrar_quem_chamou(numero, nome_funcao):
+    _titulo("QUEM CHAMOU '%s' - trial %d  [SQL]" % (nome_funcao, numero))
+    linhas = pergunta_6_quem_chamou(numero, nome_funcao)
+    if not linhas:
+        print("  (nenhuma chamada a '%s' encontrada neste trial)" % nome_funcao)
+        return
+    for linha in linhas:
+        print("  %-40s  %dx" % (linha["chamadora"][:40], linha["vezes"]))
 
 
 
 def pergunta_7_valor_de_retorno(numero, nome_funcao):
     """
-    [A IMPLEMENTAR] "Qual foi o valor de retorno da funcao Y?"
+    >>> Responde a PERGUNTA 7: "Qual foi o valor de retorno da funcao Y?"
 
-    Como fazer (sugestao, via SQL):
-      - Toda 'activation' tem uma 'evaluation' de MESMO id; o campo repr dessa
-        evaluation guarda o valor produzido pela chamada (o retorno).
-      - Junte activation + evaluation + code_component, filtre pela funcao Y
-        (pelo nome em code_component) e leia evaluation.repr.
-      - Pode haver mais de uma chamada de Y -> varios valores de retorno.
+    [SQL] Cada activation tem uma evaluation de MESMO id; o campo repr dessa
+    evaluation e o valor que a chamada produziu (o retorno da funcao).
+    Juntamos activation + evaluation + code_component, filtramos pelo nome
+    em code_component e lemos evaluation.repr, ordenado pelo instante em que
+    a chamada terminou (evaluation.checkpoint).
     """
-    # TODO: implementar
-    print("pergunta_7 ainda nao implementada")
+    query = """
+        SELECT
+            a.id          AS chamada_id,
+            e.repr        AS retorno,
+            ROUND(e.checkpoint - a.start_checkpoint, 4) AS duracao
+        FROM activation a
+        JOIN evaluation e
+             ON e.trial_id = a.trial_id
+            AND e.id       = a.id
+        JOIN code_component cc
+             ON cc.trial_id = a.trial_id
+            AND cc.id       = e.code_component_id
+            AND cc.name     = ?
+            AND cc.type     = 'function_def'
+        WHERE a.trial_id = ?
+        ORDER BY e.checkpoint
+    """
+    return consultar_sql(query, (nome_funcao, id_do_trial(numero)))
+
+
+def mostrar_valor_de_retorno(numero, nome_funcao):
+    _titulo("VALOR DE RETORNO DE '%s' - trial %d  [SQL]" % (nome_funcao, numero))
+    linhas = pergunta_7_valor_de_retorno(numero, nome_funcao)
+    if not linhas:
+        print("  (nenhuma chamada a '%s' encontrada neste trial)" % nome_funcao)
+        return
+    for i, linha in enumerate(linhas, 1):
+        retorno = (linha["retorno"] or "None")[:60]
+        print("  Chamada %-3d  retorno: %-60s  (%ss)" % (
+            i, retorno, linha["duracao"]))
 
 
 def pergunta_8_reproduzivel(numero_a, numero_b):
@@ -916,11 +970,12 @@ def menu_perguntas():
         print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [PRONTA]")#Minha
         print("  4 - [P4] Funcao que rodou por mais tempo (1 execucao)   [PRONTA]")
         print("  5 - [P5] Funcoes nao chamadas nesta execucao            [PRONTA]")
-        print("  6 - [P6] Dada a funcao X, quais funcoes a chamaram      [A IMPLEMENTAR]")
-        print("  7 - [P7] Valor de retorno da funcao Y                   [A IMPLEMENTAR]")
+        print("  6 - [P6] Dada a funcao X, quais funcoes a chamaram      [PRONTA]")
+        print("  7 - [P7] Valor de retorno da funcao Y                   [PRONTA]")
         print("  8 - [P8] Trial reproduzivel em relacao ao anterior      [A IMPLEMENTAR]")
         print("  9 - [P9] Variável mais impactada (2 trials)      [PRONTA]")#Minha
         print("  10 - [P10] Valores da variável W (1 execucao)     [PRONTA]")#Minha
+        print("  9 - [P9] Versoes e bibliotecas usadas em cada trial     [PRONTA]")
         print("  v - Voltar")
         opcao = input("Escolha: ").strip().lower()
 
@@ -960,12 +1015,12 @@ def menu_perguntas():
             mostrar_trials()
             numero = _perguntar_numero("Numero do trial: ")
             nome = input("Nome da funcao X: ").strip()
-            pergunta_6_quem_chamou(numero, nome)
+            mostrar_quem_chamou(numero, nome)
         elif opcao == "7":
             mostrar_trials()
             numero = _perguntar_numero("Numero do trial: ")
             nome = input("Nome da funcao Y: ").strip()
-            pergunta_7_valor_de_retorno(numero, nome)
+            mostrar_valor_de_retorno(numero, nome)
         elif opcao == "8":
             mostrar_trials()
             a = _perguntar_numero("Trial anterior: ")
@@ -979,6 +1034,8 @@ def menu_perguntas():
         elif opcao == "10":
             mostrar_trials()
             pergunta_10_historico(_perguntar_numero("Numero do trial: "))
+        elif opcao == "9":
+            mostrar_versoes_e_bibliotecas()
         else:
             print("Opcao invalida.")
 
