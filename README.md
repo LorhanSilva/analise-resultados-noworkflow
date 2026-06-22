@@ -25,3 +25,7 @@ pip install pyswip                              # ponte Python -> SWI-Prolog
 As consultas que usam só SQL funcionam sem isso; o Prolog é exigido apenas
 pelas análises recursivas (ex.: "por que o resultado mudou?").
 
+#### branch Lorhan
+- Fiz as implementação das perguntas 6,7 e 9;
+- Em relação a pergunta 9 recomendo retiramos ela. Basicamente o NoWorkflow salva os retornos de objetos como endereços de memória.
+Então essa pergunta meio que perde sentido, já que 90% das funções retornam objetos.
