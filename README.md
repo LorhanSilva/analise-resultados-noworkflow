@@ -25,3 +25,5 @@ pip install pyswip                              # ponte Python -> SWI-Prolog
 As consultas que usam só SQL funcionam sem isso; o Prolog é exigido apenas
 pelas análises recursivas (ex.: "por que o resultado mudou?").
 
+I have used DeepSeek to help us code. Despite that, I have revised all suggestions and made appropriate corrections. I thus take full responsibility for the contents of this work/report.
+

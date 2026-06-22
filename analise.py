@@ -554,12 +554,14 @@ def resumo_geral():
 #
 #   Pergunta 1 (funcao mais demorada entre TODAS as execucoes) -> pergunta_1_...        [A IMPLEMENTAR]
 #   Pergunta 2 (funcoes nao chamadas na ULTIMA execucao)       -> funcoes_nao_chamadas()    [PRONTA]
-#   Pergunta 3 (primeira variavel que divergiu entre 2 trials) -> pergunta_3_...        [A IMPLEMENTAR]
+#   Pergunta 3 (Qual foi a primeira variavel que divergiu entre dois trials) -> pergunta_3_primeira_divergencia()        [PRONTA]
 #   Pergunta 4 (funcao que rodou por mais tempo em 1 execucao) -> duracoes_por_funcao()     [PRONTA]
 #   Pergunta 5 (funcoes nao chamadas NESTA execucao)           -> funcoes_nao_chamadas()    [PRONTA]
 #   Pergunta 6 (dada a funcao X, quais funcoes a chamaram)     -> pergunta_6_...        [A IMPLEMENTAR]
 #   Pergunta 7 (valor de retorno da funcao Y)                  -> pergunta_7_...        [A IMPLEMENTAR]
 #   Pergunta 8 (trial e reproduzivel em relacao ao anterior)   -> pergunta_8_...        [A IMPLEMENTAR]
+#   Pergunta 9 (Qual variável teve o valor mais impactado entre dois trials) -> pergunta_9_maior_divergencia()        [PRONTA]
+#   Pergunta 10 (Quais valores uma certa variável teve ao longo da execução) -> pergunta_10_historico()        [PRONTA]
 # ----------------------------------------------------------------------------
 
 
@@ -665,6 +667,7 @@ def pergunta_6_quem_chamou(numero, nome_funcao):
     print("pergunta_6 ainda nao implementada")
 
 
+
 def pergunta_7_valor_de_retorno(numero, nome_funcao):
     """
     [A IMPLEMENTAR] "Qual foi o valor de retorno da funcao Y?"
@@ -701,23 +704,197 @@ def pergunta_8_reproduzivel(numero_a, numero_b):
 
 def pergunta_3_primeira_divergencia(numero_a, numero_b):
     """
-    [A IMPLEMENTAR] "Qual foi a PRIMEIRA variavel que divergiu entre dois trials?"
+    [PRONTA] "Qual foi a PRIMEIRA variavel que divergiu entre dois trials?"
 
     Diferenca para comparar_trials(): la pegamos a de MAIOR mudanca; aqui
     queremos a PRIMEIRA no tempo (a que divergiu mais cedo na execucao).
-
-    Como fazer (sugestao):
-      - So faz sentido quando os dois trials rodaram o mesmo codigo (mesmo
-        code hash), pois assim os code_component.id batem entre eles.
-      - Para cada trecho de codigo presente nos dois trials, compare o valor
-        (evaluation.repr).
-      - Use o instante (evaluation.checkpoint) para saber a ORDEM em que os
-        valores foram produzidos no trial B.
-      - Percorra em ordem de checkpoint e devolva o PRIMEIRO trecho cujo valor
-        difere entre os dois trials (com os dois valores).
     """
-    # TODO: implementar
-    print("pergunta_3 ainda nao implementada")
+    trial_a = id_do_trial(numero_a)
+    trial_b = id_do_trial(numero_b)
+    
+    # Busca todas as evaluations do trial B em ordem cronológica
+    # e compara com as do trial A pelo nome do code_component
+    query = """
+        SELECT e.id, cc.name AS nome, e.repr AS valor, e.checkpoint, cc.first_char_line AS linha
+        FROM evaluation e
+        JOIN code_component cc ON cc.trial_id = e.trial_id AND cc.id = e.code_component_id
+        WHERE e.trial_id = ?
+        ORDER BY e.checkpoint ASC
+    """
+    
+    evals_b = consultar_sql(query, (trial_b,))
+    
+    print("  Procurando primeira divergencia entre trial %d e %d..." % (numero_a, numero_b))
+    print("  Verificando %d evaluations..." % len(evals_b))
+    print("")
+    
+    # Para cada evaluation no trial B, busca o valor correspondente no trial A
+    contador = 0
+    for eval_b in evals_b:
+        contador += 1
+        nome = eval_b["nome"]
+        valor_b = eval_b["valor"]
+        checkpoint = eval_b["checkpoint"]
+        linha = eval_b["linha"]
+        
+        # Busca o mesmo componente no trial A
+        query_a = """
+            SELECT e.repr AS valor, e.checkpoint
+            FROM evaluation e
+            JOIN code_component cc ON cc.trial_id = e.trial_id AND cc.id = e.code_component_id
+            WHERE e.trial_id = ? AND cc.name = ?
+            ORDER BY e.checkpoint ASC
+            LIMIT 1
+        """
+        result_a = consultar_sql(query_a, (trial_a, nome))
+        
+        if result_a:
+            valor_a = result_a[0]["valor"]
+            checkpoint_a = result_a[0]["checkpoint"]
+            
+            if valor_a != valor_b:
+                # Encontrou a primeira divergência
+                print("=" * 70)
+                print("  PRIMEIRA DIVERGENCIA ENCONTRADA!")
+                print("=" * 70)
+                print("")
+                print("  VARIAVEL: %s" % nome)
+                print("  LINHA DO CODIGO: %d" % linha if linha > 0 else "  LINHA: (interna)")
+                print("")
+                print("  VALORES:")
+                print("    Trial %d: %s" % (numero_a, valor_a))
+                print("    Trial %d: %s" % (numero_b, valor_b))
+                print("")
+                print("  MOMENTO DA EXECUCAO:")
+                print("    Trial %d checkpoint: %f" % (numero_a, checkpoint_a))
+                print("    Trial %d checkpoint: %f" % (numero_b, checkpoint))
+                print("    Ordem da divergencia: %d de %d evaluations" % (contador, len(evals_b)))
+                print("")
+                
+                # Calcula a diferença se forem números
+                try:
+                    num_a = float(valor_a)
+                    num_b = float(valor_b)
+                    diferenca = abs(num_b - num_a)
+                    percentual = (diferenca / abs(num_a) * 100) if num_a != 0 else float('inf')
+                    print("  DIFERENCA NUMERICA:")
+                    print("    Diferenca absoluta: %g" % diferenca)
+                    if num_a != 0:
+                        print("    Variacao percentual: %.1f%%" % percentual)
+                    print("")
+                except (TypeError, ValueError):
+                    pass
+                
+                return
+    
+    print("  Nenhuma divergencia encontrada entre os trials.")
+    print("  Todos os valores comparados foram identicos.")
+    
+def pergunta_9_maior_divergencia(numero_a, numero_b):
+    """
+    [PRONTA] "Qual foi a variavel que divergiu mais entre dois trials?"
+    
+    Usando comparar_trials já conseguimos coletar todas as mudanças, logo, basta extrair os valores mais altos.
+
+    """
+    _titulo("VARIAVEL MAIS IMPACTADA  -  trial %d  vs  trial %d  [SQL]"
+            % (numero_a, numero_b))
+    mudancas = comparar_trials(numero_a, numero_b)
+    
+    if not mudancas:
+        print("  (nenhum valor escalar mudou entre os dois trials)")
+        return
+    
+    # A primeira já é a de maior variação (ordenada por variacao DESC)
+    nome, va, vb, variacao = mudancas[0]
+    
+    print("  VARIAVEL MAIS IMPACTADA:")
+    print("    Nome: %s" % nome)
+    print("    Trial %d: %g" % (numero_a, va))
+    print("    Trial %d: %g" % (numero_b, vb))
+    print("    Variacao: %.1f%%" % variacao)
+    print("")
+    
+    # Mostra as outras variações para contexto
+    print("  TOP 5 VARIACOES:")
+    print("  %-40s %12s %12s %10s" % ("variavel", "trial " + str(numero_a),
+                                      "trial " + str(numero_b), "variacao"))
+    print("  " + "-" * 76)
+    for nome, va, vb, variacao in mudancas[:5]:
+        print("  %-40s %12g %12g %9.1f%%" % (nome[:40], va, vb, variacao))
+    
+    
+def pergunta_10_historico(numero): # Revisar
+    """
+    [PRONTA] "Qual foram os valores que uma a variavel w conteu durante uma execução?"
+
+    """
+    trial = id_do_trial(numero)
+    
+    # Lista todas as variáveis disponíveis no trial
+    query_variaveis = """
+        SELECT DISTINCT cc.name AS nome
+        FROM evaluation e
+        JOIN code_component cc ON cc.trial_id = e.trial_id AND cc.id = e.code_component_id
+        WHERE e.trial_id = ?
+        ORDER BY cc.name
+    """
+    variaveis = consultar_sql(query_variaveis, (trial,))
+    
+    if not variaveis:
+        print("  Nenhuma variavel encontrada no trial %d" % numero)
+        return
+    
+    print("  VARIAVEIS DISPONIVEIS NO TRIAL %d:" % numero)
+    for i, var in enumerate(variaveis[:20]):
+        print("    %d. %s" % (i+1, var["nome"]))
+    if len(variaveis) > 20:
+        print("    ... e mais %d variaveis" % (len(variaveis) - 20))
+    
+    nome_variavel = input("Digite o nome da variavel W: ").strip()
+    
+    # Busca todos os valores da variável em ordem cronológica
+    query = """
+        SELECT e.repr AS valor, e.checkpoint, cc.first_char_line AS linha
+        FROM evaluation e
+        JOIN code_component cc ON cc.trial_id = e.trial_id AND cc.id = e.code_component_id
+        WHERE e.trial_id = ? AND cc.name = ?
+        ORDER BY e.checkpoint ASC
+    """
+    resultados = consultar_sql(query, (trial, nome_variavel))
+    
+    if not resultados:
+        print("  Variavel '%s' nao encontrada no trial %d" % (nome_variavel, numero))
+        return
+    
+    _titulo("HISTORICO DA VARIAVEL '%s' - trial %d" % (nome_variavel, numero))
+    
+    print("  %-30s %-20s %12s" % ("Valor", "Linha", "Checkpoint"))
+    print("  " + "-" * 65)
+    
+    for res in resultados:
+        valor = res["valor"][:30] if res["valor"] else "None"
+        linha = res["linha"] if res["linha"] > 0 else "-"
+        print("  %-30s %-20s %12.4f" % (valor, linha, res["checkpoint"]))
+    
+    print("")
+    print("  TOTAL DE REGISTROS: %d" % len(resultados))
+    
+    # Mostra estatísticas se for numérico
+    valores_numericos = []
+    for res in resultados:
+        try:
+            val = float(res["valor"])
+            valores_numericos.append(val)
+        except (TypeError, ValueError):
+            pass
+    
+    if valores_numericos:
+        print("  ESTATISTICAS (valores numericos):")
+        print("    Minimo: %g" % min(valores_numericos))
+        print("    Maximo: %g" % max(valores_numericos))
+        print("    Media: %g" % (sum(valores_numericos) / len(valores_numericos)))
+        print("    Total de valores numericos: %d" % len(valores_numericos))
 
 
 # ----------------------------------------------------------------------------
@@ -730,18 +907,20 @@ def _perguntar_numero(texto):
 
 
 def menu_perguntas():
-    """Submenu com as 8 perguntas do enunciado (chama as funcoes pergunta_*)."""
+    """Submenu com as 10 perguntas do enunciado (chama as funcoes pergunta_*)."""
     while True:
         print("")
         print("------------------- PERGUNTAS DO ENUNCIADO -------------------")
         print("  1 - [P1] Funcao mais demorada entre TODAS as execucoes  [A IMPLEMENTAR]")
-        print("  2 - [P2] Funcoes nao chamadas (vazio = ultima execucao) [PRONTA]")
-        print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [A IMPLEMENTAR]")
+        print("  2 - [P2] Funcoes nao chamadas na ULTIMA execucao        [PRONTA]")
+        print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [PRONTA]")#Minha
         print("  4 - [P4] Funcao que rodou por mais tempo (1 execucao)   [PRONTA]")
         print("  5 - [P5] Funcoes nao chamadas nesta execucao            [PRONTA]")
         print("  6 - [P6] Dada a funcao X, quais funcoes a chamaram      [A IMPLEMENTAR]")
         print("  7 - [P7] Valor de retorno da funcao Y                   [A IMPLEMENTAR]")
         print("  8 - [P8] Trial reproduzivel em relacao ao anterior      [A IMPLEMENTAR]")
+        print("  9 - [P9] Variável mais impactada (2 trials)      [PRONTA]")#Minha
+        print("  10 - [P10] Valores da variável W (1 execucao)     [PRONTA]")#Minha
         print("  v - Voltar")
         opcao = input("Escolha: ").strip().lower()
 
@@ -792,6 +971,14 @@ def menu_perguntas():
             a = _perguntar_numero("Trial anterior: ")
             b = _perguntar_numero("Trial atual: ")
             pergunta_8_reproduzivel(a, b)
+        elif opcao == "9":
+            mostrar_trials()
+            a = _perguntar_numero("Primeiro trial: ")
+            b = _perguntar_numero("Segundo trial: ")
+            pergunta_9_maior_divergencia(a, b)
+        elif opcao == "10":
+            mostrar_trials()
+            pergunta_10_historico(_perguntar_numero("Numero do trial: "))
         else:
             print("Opcao invalida.")
 
