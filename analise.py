@@ -843,7 +843,57 @@ def pergunta_3_primeira_divergencia(numero_a, numero_b):
     
     print("  Nenhuma divergencia encontrada entre os trials.")
     print("  Todos os valores comparados foram identicos.")
-    
+
+def pergunta_11_versoes_e_bibliotecas():
+    """
+    >>> Responde a PERGUNTA 11: "Quais versoes e bibliotecas foram usadas em cada trial?"
+
+    [SQL] O noWorkflow registra, em 'module', cada modulo importado durante
+    cada trial, junto com sua versao (quando disponivel). A tabela 'trial'
+    guarda, alem do id, a versao do Python usada (coluna python_version) e o
+    hash do codigo principal (code_hash), o que permite detectar mudancas.
+
+    A consulta agrupa os modulos por trial e os exibe em ordem de nome, com
+    a versao ao lado. Trials sem modulos registrados tambem aparecem (LEFT JOIN).
+    """
+    query = """
+        SELECT
+            t.id                                    AS trial_id,
+            ROW_NUMBER() OVER (ORDER BY t.start)    AS numero,
+            t.command                               AS comando,
+            m.name                                  AS modulo,
+            m.version                               AS versao
+        FROM trial t
+        LEFT JOIN module m ON m.trial_id = t.id
+        ORDER BY t.start, m.name
+    """
+    return consultar_sql(query)
+
+
+def mostrar_versoes_e_bibliotecas():
+    _titulo("VERSOES E BIBLIOTECAS POR TRIAL  [SQL]")
+    linhas = pergunta_11_versoes_e_bibliotecas()
+    if not linhas:
+        print("  (nenhuma informacao de modulo encontrada no banco)")
+        return
+
+    trial_atual = None
+    for linha in linhas:
+        numero = linha["numero"]
+        if numero != trial_atual:
+            trial_atual = numero
+            print("")
+            print("  Trial %d | %s" % (
+                numero,
+                (linha["comando"] or "")[:50]))
+            print("  " + "-" * 60)
+        modulo = linha["modulo"]
+        if modulo:
+            versao = linha["versao"] or "(versao nao registrada)"
+            print("    %-35s %s" % (modulo[:35], versao[:30]))
+        else:
+            print("    (nenhum modulo registrado para este trial)")
+
 def pergunta_9_maior_divergencia(numero_a, numero_b):
     """
     [PRONTA] "Qual foi a variavel que divergiu mais entre dois trials?"
@@ -1034,7 +1084,7 @@ def menu_perguntas():
         elif opcao == "10":
             mostrar_trials()
             pergunta_10_historico(_perguntar_numero("Numero do trial: "))
-        elif opcao == "9":
+        elif opcao == "11":
             mostrar_versoes_e_bibliotecas()
         else:
             print("Opcao invalida.")
