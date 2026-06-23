@@ -1,17 +1,10 @@
 # analise-resultados-noworkflow
 Proposta de trabalho da diciplina de eScience, uso do NoWorkflow para captura de proveniência em script cientifico.
 
-Para usar nosso trabalho, precisa-se instalar o NoWorkFlow, copiando-o do github, não o instale pelo pip, senão encontrará erros.
+Nós usamos consultas SQL e Prolog para facilitar o entendimento dos usuários da proveniênica gerada pelo NoWorkflow
 
-1. Dentre Z execuções, qual função rodou por mais tempo? - Caio
-2. Dada uma função X, quais funções a chamaram? - Lorhan 
-3. Qual foi o valor de retorno da função Y? - Lorhan
-4. Quais funções não foram chamadas na última execução? - Caio
-6. Impactos entre diferentes valores de um certo parâmetro? - Caio
-5. Qual foi a primeira variável que divergiu entre dois trials? - Guilherme 
-7. Qual variável teve o valor mais impactado entre dois trials? - Guilherme
-8. Quais valores uma certa variável teve ao longo da execução? - Guilherme
-9. Quais versões e bilbiotecas foram usadas em cada trial?  - Lorhan
+# Requerimentos
+Para usar nosso trabalho, precisa-se instalar o NoWorkFlow, copiando-o do github, não o instale pelo pip, senão encontrará erros.
 
 ## Prolog (necessário para as consultas em Prolog)
 
@@ -25,14 +18,28 @@ pip install pyswip                              # ponte Python -> SWI-Prolog
 As consultas que usam só SQL funcionam sem isso; o Prolog é exigido apenas
 pelas análises recursivas (ex.: "por que o resultado mudou?").
 
-I have used DeepSeek to help us code. Despite that, I have revised all suggestions and made appropriate corrections. I thus take full responsibility for the contents of this work/report.
+# Declaração de uso de IA
 
-<<<<<<< HEAD
-I have used DeepSeek to help us code. Despite that, I have revised all suggestions and made appropriate corrections. I thus take full responsibility for the contents of this work/report.
+We have used DeepSeek and Claude to help us code. Despite that, we have revised all suggestions and made appropriate corrections. We thus take full responsibility for the contents of this work/report.
 
-=======
-#### branch Lorhan
-- Fiz as implementação das perguntas 6,7 e 9;
-- Em relação a pergunta 9 recomendo retiramos ela. Basicamente o NoWorkflow salva os retornos de objetos como endereços de memória.
-Então essa pergunta meio que perde sentido, já que 90% das funções retornam objetos.
->>>>>>> origin/Lorhan
+
+As perguntas seguem a numeração do menu da ferramenta (`analise.py`),
+agrupadas por escopo:
+
+# Panorama geral da ferramenta (perguntas que queremos responder)
+Uma execução:
+
+1. Quais funções não foram chamadas? (última execução ou trial escolhido)
+2. Dada a função X, quais funções a chamaram?
+3. Quais valores uma variável teve ao longo da execução?
+
+Várias execuções:
+
+4. Dentre Z execuções, qual função rodou por mais tempo?
+5. Quais versões e bibliotecas foram usadas em cada trial?
+
+Comparar DOIS trials:
+
+6. Qual foi a primeira variável que divergiu entre dois trials?
+7. Qual variável teve o valor mais impactado entre dois trials?
+8. Impactos entre diferentes valores de um certo parâmetro? (por que o resultado mudou)

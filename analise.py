@@ -522,56 +522,56 @@ def mostrar_por_que_mudou(numero_a, numero_b):
 
 
 def resumo_geral():
-    """Roda todas as analises de uma vez (pode ficar longo)."""
+    """Roda as perguntas que nao precisam de entrada extra (pode ficar longo)."""
     mostrar_trials()
 
     finalizados = [t["n"] for t in listar_trials() if t["status"] == "finished"]
     if not finalizados:
-        print("\nNao ha trials finalizados para analisar.")
+        print("\nNão há trials finalizados para analisar.")
         return
 
-    primeiro = finalizados[0]
-    mostrar_duracoes(primeiro)
-    mostrar_funcoes_nao_chamadas(primeiro)
+    # uma execução (a ultima finalizada)
+    mostrar_funcoes_nao_chamadas(finalizados[-1])
+    # várias execuções
+    pergunta_4_funcao_mais_demorada_geral()
+    # (versões/bibliotecas ficam fora do resumo: a lista e paginada e enorme)
 
+    # comparar os dois primeiros trials finalizados
     if len(finalizados) >= 2:
         a = finalizados[0]
         b = finalizados[1]
-        mostrar_comparacao(a, b)
+        pergunta_6_primeira_divergencia(a, b)
+        pergunta_7_maior_divergencia(a, b)
         mostrar_por_que_mudou(a, b)
     else:
-        print("\n(Apenas um trial finalizado: nao da para comparar.)")
+        print("\n(Apenas um trial finalizado: não dá para comparar.)")
 
 
 # ============================================================================
-# PERGUNTAS DO ENUNCIADO  -  MAPA E FUNCOES A IMPLEMENTAR
+# PERGUNTAS DO ENUNCIADO  -  MAPA (item do menu -> funcao -> responsavel)
 # ============================================================================
 #
-# Mapa de qual funcao resolve qual pergunta. As perguntas JA RESOLVIDAS tem,
-# mais acima no arquivo, um comentario "# Responde: Pergunta N" na funcao
-# correspondente. As que FALTAM estao abaixo, como funcoes vazias (stubs)
-# para implementar (procure o "TODO").
+#   Menu 1  Funcoes nao chamadas (ultima/escolher)        -> mostrar_funcoes_nao_chamadas         (Caio)
+#   Menu 2  Quem chamou a funcao X                         -> mostrar_quem_chamou                  (Lorhan)
+#   Menu 3  Valores que uma variavel teve ao longo         -> pergunta_3_historico                 (Guilherme)
+#   Menu 4  Funcao que rodou por mais tempo (Z execucoes)  -> pergunta_4_funcao_mais_demorada_geral (Caio)
+#   Menu 5  Versoes e bibliotecas por trial                -> mostrar_versoes_e_bibliotecas        (Lorhan)
+#   Menu 6  Primeira variavel que divergiu                 -> pergunta_6_primeira_divergencia      (Guilherme)
+#   Menu 7  Variavel mais impactada                        -> pergunta_7_maior_divergencia         (Guilherme)
+#   Menu 8  Por que o resultado mudou?                     -> mostrar_por_que_mudou                (Caio)
 #
-#   Pergunta 1 (funcao mais demorada entre TODAS as execucoes) -> pergunta_1_...        [A IMPLEMENTAR]
-#   Pergunta 2 (funcoes nao chamadas na ULTIMA execucao)       -> funcoes_nao_chamadas()    [PRONTA]
-#   Pergunta 3 (Qual foi a primeira variavel que divergiu entre dois trials) -> pergunta_3_primeira_divergencia()        [PRONTA]
-#   Pergunta 4 (funcao que rodou por mais tempo em 1 execucao) -> duracoes_por_funcao()     [PRONTA]
-#   Pergunta 5 (funcoes nao chamadas NESTA execucao)           -> funcoes_nao_chamadas()    [PRONTA]
-#   Pergunta 6 (dada a funcao X, quais funcoes a chamaram)     -> pergunta_6_...        [A IMPLEMENTAR]
-#   Pergunta 7 (valor de retorno da funcao Y)                  -> pergunta_7_...        [A IMPLEMENTAR]
-#   Pergunta 8 (trial e reproduzivel em relacao ao anterior)   -> pergunta_8_...        [A IMPLEMENTAR]
-#   Pergunta 9 (Qual variável teve o valor mais impactado entre dois trials) -> pergunta_9_maior_divergencia()        [PRONTA]
-#   Pergunta 10 (Quais valores uma certa variável teve ao longo da execução) -> pergunta_10_historico()        [PRONTA]
+# Obs.: o numero no nome da funcao (pergunta_N) bate com o numero do menu.
+# Algumas usam uma funcao auxiliar 'mostrar_...' so para a impressao.
 # ----------------------------------------------------------------------------
 
 
-def pergunta_1_funcao_mais_demorada_geral(numeros=None):
+def pergunta_4_funcao_mais_demorada_geral(numeros=None):
     """
-    [Dono: Caio] PERGUNTA 1: "Dentre Z execucoes, qual funcao rodou por mais tempo?"
+    [Dono: Caio] PERGUNTA 4 (menu): "Dentre Z execucoes, qual funcao rodou por mais tempo?"
 
     numeros: lista de numeros de trial a considerar.
              None ou lista vazia = TODAS as execucoes finalizadas.
-             Ex.: pergunta_1_funcao_mais_demorada_geral([2, 3, 4]).
+             Ex.: pergunta_4_funcao_mais_demorada_geral([2, 3, 4]).
 
     Usa o TEMPO PROPRIO de cada funcao: o tempo gasto NELA MESMA, descontando
     o tempo das funcoes que ela chamou. Assim o ranking aponta o gargalo real
@@ -650,9 +650,9 @@ def pergunta_1_funcao_mais_demorada_geral(numeros=None):
               % (tempo, trial_n, chamadas[(trial_n, nome_f)], curto))
 
 
-def pergunta_6_quem_chamou(numero, nome_funcao):
+def pergunta_2_quem_chamou(numero, nome_funcao):
     """
-    >>> Responde a PERGUNTA 6: "Dada uma funcao X, quais funcoes a chamaram?"
+    >>> Responde a PERGUNTA 2 (menu): "Dada uma funcao X, quais funcoes a chamaram?"
 
      [SQL] Para cada chamada de X, sobe um nivel no grafo de ativacoes:
       1. Acha o id da definicao de X em code_component (type='function_def').
@@ -686,7 +686,7 @@ def pergunta_6_quem_chamou(numero, nome_funcao):
 
 def mostrar_quem_chamou(numero, nome_funcao):
     _titulo("QUEM CHAMOU '%s' - trial %d  [SQL]" % (nome_funcao, numero))
-    linhas = pergunta_6_quem_chamou(numero, nome_funcao)
+    linhas = pergunta_2_quem_chamou(numero, nome_funcao)
     if not linhas:
         print("  (nenhuma chamada a '%s' encontrada neste trial)" % nome_funcao)
         return
@@ -695,68 +695,7 @@ def mostrar_quem_chamou(numero, nome_funcao):
 
 
 
-def pergunta_7_valor_de_retorno(numero, nome_funcao):
-    """
-    >>> Responde a PERGUNTA 7: "Qual foi o valor de retorno da funcao Y?"
-
-    [SQL] Cada activation tem uma evaluation de MESMO id; o campo repr dessa
-    evaluation e o valor que a chamada produziu (o retorno da funcao).
-    Juntamos activation + evaluation + code_component, filtramos pelo nome
-    em code_component e lemos evaluation.repr, ordenado pelo instante em que
-    a chamada terminou (evaluation.checkpoint).
-    """
-    query = """
-        SELECT
-            a.id          AS chamada_id,
-            e.repr        AS retorno,
-            ROUND(e.checkpoint - a.start_checkpoint, 4) AS duracao
-        FROM activation a
-        JOIN evaluation e
-             ON e.trial_id = a.trial_id
-            AND e.id       = a.id
-        JOIN code_component cc
-             ON cc.trial_id = a.trial_id
-            AND cc.id       = e.code_component_id
-            AND cc.name     = ?
-            AND cc.type     = 'function_def'
-        WHERE a.trial_id = ?
-        ORDER BY e.checkpoint
-    """
-    return consultar_sql(query, (nome_funcao, id_do_trial(numero)))
-
-
-def mostrar_valor_de_retorno(numero, nome_funcao):
-    _titulo("VALOR DE RETORNO DE '%s' - trial %d  [SQL]" % (nome_funcao, numero))
-    linhas = pergunta_7_valor_de_retorno(numero, nome_funcao)
-    if not linhas:
-        print("  (nenhuma chamada a '%s' encontrada neste trial)" % nome_funcao)
-        return
-    for i, linha in enumerate(linhas, 1):
-        retorno = (linha["retorno"] or "None")[:60]
-        print("  Chamada %-3d  retorno: %-60s  (%ss)" % (
-            i, retorno, linha["duracao"]))
-
-
-def pergunta_8_reproduzivel(numero_a, numero_b):
-    """
-    [A IMPLEMENTAR] "O trial B e reproduzivel em relacao ao A (anterior)?"
-
-    Ideia: B reproduz A se rodou o MESMO codigo, com as MESMAS entradas, e
-    chegou aos MESMOS resultados.
-
-    Como fazer (sugestao):
-      - Compare o code hash dos dois trials (tabela trial, coluna code_hash):
-        se diferente, o codigo mudou.
-      - Compare as entradas (pode usar a coluna command do trial).
-      - Use comparar_trials(a, b): se NENHUM resultado escalar divergiu, as
-        saidas batem.
-      - Conclua: reproduzivel = mesmo codigo + mesmas entradas + saidas iguais.
-    """
-    # TODO: implementar
-    print("pergunta_8 ainda nao implementada")
-
-
-def pergunta_3_primeira_divergencia(numero_a, numero_b):
+def pergunta_6_primeira_divergencia(numero_a, numero_b):
     """
     [PRONTA] "Qual foi a PRIMEIRA variavel que divergiu entre dois trials?"
 
@@ -844,9 +783,9 @@ def pergunta_3_primeira_divergencia(numero_a, numero_b):
     print("  Nenhuma divergencia encontrada entre os trials.")
     print("  Todos os valores comparados foram identicos.")
 
-def pergunta_11_versoes_e_bibliotecas():
+def pergunta_5_versoes_e_bibliotecas():
     """
-    >>> Responde a PERGUNTA 11: "Quais versoes e bibliotecas foram usadas em cada trial?"
+    >>> Responde a PERGUNTA 5 (menu): "Quais versoes e bibliotecas foram usadas em cada trial?"
 
     [SQL] O noWorkflow registra, em 'module', cada modulo importado durante
     cada trial, junto com sua versao (quando disponivel). A tabela 'trial'
@@ -871,30 +810,48 @@ def pergunta_11_versoes_e_bibliotecas():
 
 
 def mostrar_versoes_e_bibliotecas():
-    _titulo("VERSOES E BIBLIOTECAS POR TRIAL  [SQL]")
-    linhas = pergunta_11_versoes_e_bibliotecas()
+    _titulo("VERSÕES E BIBLIOTECAS POR TRIAL  [SQL]")
+    linhas = pergunta_5_versoes_e_bibliotecas()
     if not linhas:
-        print("  (nenhuma informacao de modulo encontrada no banco)")
+        print("  (nenhuma informação de módulo encontrada no banco)")
         return
 
-    trial_atual = None
-    for linha in linhas:
-        numero = linha["numero"]
-        if numero != trial_atual:
-            trial_atual = numero
-            print("")
-            print("  Trial %d | %s" % (
-                numero,
-                (linha["comando"] or "")[:50]))
-            print("  " + "-" * 60)
-        modulo = linha["modulo"]
-        if modulo:
-            versao = linha["versao"] or "(versao nao registrada)"
-            print("    %-35s %s" % (modulo[:35], versao[:30]))
-        else:
-            print("    (nenhum modulo registrado para este trial)")
+    # São muitos módulos (o noWorkflow registra ate as dependencias internas),
+    # entao mostramos de 15 em 15: o usuario aperta Enter para ver os proximos
+    # ou digita M para voltar ao menu.
+    # mapa do id (UUID) para o numero sequencial do trial (1, 2, 3, ...)
+    numero_por_id = {t["id"]: t["n"] for t in listar_trials()}
 
-def pergunta_9_maior_divergencia(numero_a, numero_b):
+    POR_PAGINA = 15
+    total = len(linhas)
+    indice = 0
+    while indice < total:
+        trial_atual = None   # reimprime o cabecalho do trial no inicio da pagina
+        fim = min(indice + POR_PAGINA, total)
+        for i in range(indice, fim):
+            linha = linhas[i]
+            if linha["trial_id"] != trial_atual:
+                trial_atual = linha["trial_id"]
+                numero = numero_por_id.get(linha["trial_id"], "?")
+                print("")
+                print("  Trial %s | %s" % (numero, (linha["comando"] or "")[:50]))
+                print("  " + "-" * 60)
+            modulo = linha["modulo"]
+            if modulo:
+                versao = linha["versao"] or "(versão não registrada)"
+                print("    %-35s %s" % (modulo[:35], versao[:30]))
+            else:
+                print("    (nenhum módulo registrado para este trial)")
+        indice = fim
+        if indice >= total:
+            break
+        print("")
+        print("  Mostrando %d de %d.  [Enter] = próximos %d   |   [M] = voltar ao menu"
+              % (indice, total, POR_PAGINA))
+        if input("  > ").strip().lower() == "m":
+            break
+
+def pergunta_7_maior_divergencia(numero_a, numero_b):
     """
     [PRONTA] "Qual foi a variavel que divergiu mais entre dois trials?"
     
@@ -928,32 +885,32 @@ def pergunta_9_maior_divergencia(numero_a, numero_b):
         print("  %-40s %12g %12g %9.1f%%" % (nome[:40], va, vb, variacao))
     
     
-def pergunta_10_historico(numero): # Revisar
+def pergunta_3_historico(numero): # Revisar
     """
     [PRONTA] "Qual foram os valores que uma a variavel w conteu durante uma execução?"
 
     """
     trial = id_do_trial(numero)
     
-    # Lista todas as variáveis disponíveis no trial
-    query_variaveis = """
-        SELECT DISTINCT cc.name AS nome
-        FROM evaluation e
-        JOIN code_component cc ON cc.trial_id = e.trial_id AND cc.id = e.code_component_id
-        WHERE e.trial_id = ?
-        ORDER BY cc.name
-    """
-    variaveis = consultar_sql(query_variaveis, (trial,))
+    # # Lista todas as variáveis disponíveis no trial
+    # query_variaveis = """
+    #     SELECT DISTINCT cc.name AS nome
+    #     FROM evaluation e
+    #     JOIN code_component cc ON cc.trial_id = e.trial_id AND cc.id = e.code_component_id
+    #     WHERE e.trial_id = ?
+    #     ORDER BY cc.name
+    # """
+    # variaveis = consultar_sql(query_variaveis, (trial,))
     
-    if not variaveis:
-        print("  Nenhuma variavel encontrada no trial %d" % numero)
-        return
+    # if not variaveis:
+    #     print("  Nenhuma variavel encontrada no trial %d" % numero)
+    #     return
     
-    print("  VARIAVEIS DISPONIVEIS NO TRIAL %d:" % numero)
-    for i, var in enumerate(variaveis[:20]):
-        print("    %d. %s" % (i+1, var["nome"]))
-    if len(variaveis) > 20:
-        print("    ... e mais %d variaveis" % (len(variaveis) - 20))
+    # print("  VARIAVEIS DISPONIVEIS NO TRIAL %d:" % numero)
+    # for i, var in enumerate(variaveis[:20]):
+    #     print("    %d. %s" % (i+1, var["nome"]))
+    # if len(variaveis) > 20:
+    #     print("    ... e mais %d variaveis" % (len(variaveis) - 20))
     
     nome_variavel = input("Digite o nome da variavel W: ").strip()
     
@@ -1010,35 +967,34 @@ def _perguntar_numero(texto):
     return int(input(texto).strip())
 
 
-def menu_perguntas():
-    """Submenu com as 10 perguntas do enunciado (chama as funcoes pergunta_*)."""
+def menu():
     while True:
         print("")
-        print("------------------- PERGUNTAS DO ENUNCIADO -------------------")
-        print("  1 - [P1] Funcao mais demorada entre TODAS as execucoes  [A IMPLEMENTAR]")
-        print("  2 - [P2] Funcoes nao chamadas na ULTIMA execucao        [PRONTA]")
-        print("  3 - [P3] Primeira variavel que divergiu (2 trials)      [PRONTA]")#Minha
-        print("  4 - [P4] Funcao que rodou por mais tempo (1 execucao)   [PRONTA]")
-        print("  5 - [P5] Funcoes nao chamadas nesta execucao            [PRONTA]")
-        print("  6 - [P6] Dada a funcao X, quais funcoes a chamaram      [PRONTA]")
-        print("  7 - [P7] Valor de retorno da funcao Y                   [PRONTA]")
-        print("  8 - [P8] Trial reproduzivel em relacao ao anterior      [A IMPLEMENTAR]")
-        print("  9 - [P9] Variável mais impactada (2 trials)      [PRONTA]")#Minha
-        print("  10 - [P10] Valores da variável W (1 execucao)     [PRONTA]")#Minha
-        print("  9 - [P9] Versoes e bibliotecas usadas em cada trial     [PRONTA]")
-        print("  v - Voltar")
+        print("============= ANÁLISE DE PROVENIÊNCIA (noWorkflow) =============")
+        print(" UMA execução:")
+        print("   1 - Funções não chamadas (última / escolher trial)")
+        print("   2 - Quem chamou a função X?")
+        print("   3 - Valores que uma variável teve ao longo da execução")
+        print(" VÁRIAS execuções:")
+        print("   4 - Função que rodou por mais tempo (vazio/0 = todas, ou lista)")
+        print("   5 - Versões e bibliotecas usadas por trial")
+        print(" Comparar DOIS trials:")
+        print("   6 - Primeira variável que divergiu")
+        print("   7 - Variável mais impactada")
+        print("   8 - Por que o resultado mudou? (impactos de um parâmetro)")
+        print(" Apoio:")
+        print("   L - Listar trials      R - Resumo geral      q - Sair")
         opcao = input("Escolha: ").strip().lower()
 
-        if opcao == "v":
+        if opcao == "q":
             break
+        elif opcao == "l":
+            mostrar_trials()
+        elif opcao == "r":
+            resumo_geral()
+
+        # --- UMA execução ---
         elif opcao == "1":
-            entrada = input("Trials (vazio/0 = todas, ou ex.: 2,3,4): ").strip()
-            if entrada == "" or entrada == "0":
-                numeros = None
-            else:
-                numeros = [int(x) for x in entrada.replace(",", " ").split()]
-            pergunta_1_funcao_mais_demorada_geral(numeros)
-        elif opcao == "2":
             mostrar_trials()
             entrada = input("Trial (vazio = última execução): ").strip()
             if entrada == "":
@@ -1050,86 +1006,44 @@ def menu_perguntas():
             else:
                 numero = int(entrada)
             mostrar_funcoes_nao_chamadas(numero)
-        elif opcao == "3":
-            mostrar_trials()
-            a = _perguntar_numero("Primeiro trial: ")
-            b = _perguntar_numero("Segundo trial: ")
-            pergunta_3_primeira_divergencia(a, b)
-        elif opcao == "4":
-            mostrar_trials()
-            mostrar_duracoes(_perguntar_numero("Numero do trial: "))
-        elif opcao == "5":
-            mostrar_trials()
-            mostrar_funcoes_nao_chamadas(_perguntar_numero("Numero do trial: "))
-        elif opcao == "6":
-            mostrar_trials()
-            numero = _perguntar_numero("Numero do trial: ")
-            nome = input("Nome da funcao X: ").strip()
-            mostrar_quem_chamou(numero, nome)
-        elif opcao == "7":
-            mostrar_trials()
-            numero = _perguntar_numero("Numero do trial: ")
-            nome = input("Nome da funcao Y: ").strip()
-            mostrar_valor_de_retorno(numero, nome)
-        elif opcao == "8":
-            mostrar_trials()
-            a = _perguntar_numero("Trial anterior: ")
-            b = _perguntar_numero("Trial atual: ")
-            pergunta_8_reproduzivel(a, b)
-        elif opcao == "9":
-            mostrar_trials()
-            a = _perguntar_numero("Primeiro trial: ")
-            b = _perguntar_numero("Segundo trial: ")
-            pergunta_9_maior_divergencia(a, b)
-        elif opcao == "10":
-            mostrar_trials()
-            pergunta_10_historico(_perguntar_numero("Numero do trial: "))
-        elif opcao == "11":
-            mostrar_versoes_e_bibliotecas()
-        else:
-            print("Opcao invalida.")
-
-
-def menu():
-    while True:
-        print("")
-        print("==================== ANALISE DE PROVENIENCIA ====================")
-        print("  0 - Resumo geral (roda tudo)")
-        print("  1 - Listar trials")
-        print("  2 - Tempo por funcao (1 trial)            [SQL]")
-        print("  3 - Funcoes definidas mas nao chamadas    [SQL]")
-        print("  4 - Comparar variaveis de 2 trials        [SQL]")
-        print("  5 - Por que o resultado mudou? (2 trials) [SQL + Prolog]")
-        print("  p - Perguntas do enunciado (P1..P8)")
-        print("  q - Sair")
-        opcao = input("Escolha: ").strip().lower()
-
-        if opcao == "q":
-            break
-        elif opcao == "0":
-            resumo_geral()
-        elif opcao == "1":
-            mostrar_trials()
         elif opcao == "2":
             mostrar_trials()
-            mostrar_duracoes(_perguntar_numero("Numero do trial: "))
+            numero = _perguntar_numero("Número do trial: ")
+            nome = input("Nome da função X: ").strip()
+            mostrar_quem_chamou(numero, nome)
         elif opcao == "3":
             mostrar_trials()
-            mostrar_funcoes_nao_chamadas(_perguntar_numero("Numero do trial: "))
+            pergunta_3_historico(_perguntar_numero("Número do trial: "))
+
+        # --- VÁRIAS execuções ---
         elif opcao == "4":
+            entrada = input("Trials (vazio/0 = todas, ou ex.: 2,3,4): ").strip()
+            if entrada == "" or entrada == "0":
+                numeros = None
+            else:
+                numeros = [int(x) for x in entrada.replace(",", " ").split()]
+            pergunta_4_funcao_mais_demorada_geral(numeros)
+        elif opcao == "5":
+            mostrar_versoes_e_bibliotecas()
+
+        # --- Comparar DOIS trials ---
+        elif opcao == "6":
             mostrar_trials()
             a = _perguntar_numero("Primeiro trial: ")
             b = _perguntar_numero("Segundo trial: ")
-            mostrar_comparacao(a, b)
-        elif opcao == "5":
+            pergunta_6_primeira_divergencia(a, b)
+        elif opcao == "7":
+            mostrar_trials()
+            a = _perguntar_numero("Primeiro trial: ")
+            b = _perguntar_numero("Segundo trial: ")
+            pergunta_7_maior_divergencia(a, b)
+        elif opcao == "8":
             mostrar_trials()
             a = _perguntar_numero("Primeiro trial: ")
             b = _perguntar_numero("Segundo trial: ")
             mostrar_por_que_mudou(a, b)
-        elif opcao == "p":
-            menu_perguntas()
         else:
-            print("Opcao invalida.")
+            print("Opção inválida.")
 
 
 if __name__ == "__main__":
